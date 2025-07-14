@@ -387,6 +387,64 @@
             border-bottom: none;
         }
 
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .badge-completed { background: #4CAF50; color: white; }
+        .badge-partial { background: #ff9800; color: white; }
+        .badge-missing { background: #f44336; color: white; }
+        .badge-na { background: #9e9e9e; color: white; }
+
+        .team-status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background: #f8f9fa;
+        }
+
+        .activity-time {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .blinking {
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { background: #e8f5e8; }
+            51%, 100% { background: white; }
+        }
+
         @media (max-width: 768px) {
             .criteria-grid {
                 grid-template-columns: 1fr;
@@ -536,7 +594,7 @@
 
                     <div class="form-group" id="executiveGroup" style="display: none;">
                         <label for="executivePosition">소속본부</label>
-                        <select id="executivePosition">
+                        <select id="executivePosition" onchange="updateExecutiveName()">
                             <option value="">소속본부 선택</option>
                             <option value="경영전략본부장">경영전략</option>
                             <option value="복지경제본부장">복지경제</option>
@@ -652,41 +710,4 @@
                             <div style="font-size: 0.9em; color: #666; margin-top: 5px;">최소 6점 ~ 최대 10점</div>
                         </div>
 
-                        <div class="criteria-item">
-                            <div class="criteria-header">
-                                <span class="criteria-title">기여도</span>
-                                <span class="criteria-max">6~10점</span>
-                            </div>
-                            <input type="number" class="score-input" id="contribution" min="6" max="10" placeholder="6-10점">
-                            <div style="font-size: 0.9em; color: #666; margin-top: 5px;">최소 6점 ~ 최대 10점</div>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 30px;">
-                        <button class="btn btn-secondary" onclick="previousStep()" id="prevBtn" style="display: none;">이전</button>
-                        <button class="btn btn-primary" onclick="nextStep()" id="nextBtn">다음 과제</button>
-                        <button class="btn btn-primary" onclick="showSummary()" id="summaryBtn" style="display: none;">평가 완료</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 평가 요약 및 제출 단계 -->
-            <div id="summaryStep" style="display: none;">
-                <h2 style="margin-bottom: 20px; color: #333;">평가 요약 및 제출</h2>
-                
-                <div class="evaluator-info" id="summaryEvaluatorInfo">
-                    <!-- 평가자 정보가 여기에 표시됩니다 -->
-                </div>
-
-                <div id="evaluationSummaryContainer">
-                    <!-- 평가 요약이 여기에 표시됩니다 -->
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="btn btn-secondary" onclick="backToEvaluation()">수정하기</button>
-                    <button class="btn btn-primary" onclick="submitAllEvaluations()">최종 제출</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 실시간 결과 탭 -->
+                        
