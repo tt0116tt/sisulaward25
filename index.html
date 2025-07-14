@@ -737,7 +737,64 @@
                     <button class="btn btn-secondary" onclick="exportMissingList()">📋 미완료자 명단 출력</button>
                 </div>
             </div>
-            <!-- 모니터링 내용은 기존과 동일하므로 생략 -->
+
+            <!-- 전체 진행률 -->
+            <div class="progress-overview" style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 20px; color: #4CAF50;">📈 전체 진행 현황</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div class="progress-card">
+                        <div class="progress-number" id="overallProgress">0%</div>
+                        <div class="progress-label">전체 완료율</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-number" id="executiveProgress">0%</div>
+                        <div class="progress-label">임원 완료율</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-number" id="employeeProgress">0%</div>
+                        <div class="progress-label">직원 완료율</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-number" id="lastUpdate">-</div>
+                        <div class="progress-label">마지막 업데이트</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 부서별 평가 현황 -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <!-- 임원 평가 현황 -->
+                <div class="monitor-section">
+                    <h3 style="color: #4CAF50; margin-bottom: 15px;">👔 임원 평가 현황</h3>
+                    <div id="executiveStatus" class="status-grid">
+                        <!-- 임원별 평가 현황이 여기에 표시 -->
+                    </div>
+                </div>
+
+                <!-- 직원 평가 현황 (부서별) -->
+                <div class="monitor-section">
+                    <h3 style="color: #4CAF50; margin-bottom: 15px;">👥 직원 평가 현황 (부서별)</h3>
+                    <div id="departmentStatus" class="status-grid">
+                        <!-- 부서별 평가 현황이 여기에 표시 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 발표팀별 평가 완료 현황 -->
+            <div class="monitor-section">
+                <h3 style="color: #4CAF50; margin-bottom: 15px;">🎯 발표팀별 평가 완료 현황</h3>
+                <div class="team-status-grid" id="teamStatusGrid">
+                    <!-- 발표팀별 현황이 여기에 표시 -->
+                </div>
+            </div>
+
+            <!-- 최근 평가 활동 로그 -->
+            <div class="monitor-section" style="margin-top: 30px;">
+                <h3 style="color: #4CAF50; margin-bottom: 15px;">📝 최근 평가 활동 (실시간)</h3>
+                <div id="recentActivity" style="background: white; border-radius: 10px; max-height: 300px; overflow-y: auto;">
+                    <!-- 최근 활동이 여기에 표시 -->
+                </div>
+            </div>
         </div>
 
         <!-- 평가 관리 탭 -->
@@ -1293,11 +1350,339 @@
             document.getElementById('completionRate').textContent = completionRate + '%';
         }
 
-        // 기타 관리 함수들 (간소화)
-        function updateMonitor() {}
-        function updateManagement() {}
-        function exportMissingList() {}
-        function exportResults() {}
+        // 모니터링 업데이트
+        function updateMonitor() {
+            updateProgressOverview();
+            updateExecutiveStatus();
+            updateDepartmentStatus();
+            updateTeamStatus();
+            updateRecentActivity();
+        }
+
+        // 전체 진행률 업데이트
+        function updateProgressOverview() {
+            const totalEvaluations = Object.keys(evaluations).length;
+            const executiveEvals = Object.values(evaluations).filter(e => e.evaluatorType === 'chairman' || e.evaluatorType === 'executive').length;
+            const employeeEvals = Object.values(evaluations).filter(e => e.evaluatorType === 'employee').length;
+            
+            const expectedExecutive = 7 * 8;
+            let expectedEmployee = 0;
+            presentingDepts.forEach(dept => {
+                expectedEmployee += 25;
+            });
+            const expectedTotal = expectedExecutive + expectedEmployee;
+
+            const overallProgress = expectedTotal > 0 ? ((totalEvaluations / expectedTotal) * 100).toFixed(1) : 0;
+            const executiveProgress = expectedExecutive > 0 ? ((executiveEvals / expectedExecutive) * 100).toFixed(1) : 0;
+            const employeeProgress = expectedEmployee > 0 ? ((employeeEvals / expectedEmployee) * 100).toFixed(1) : 0;
+
+            document.getElementById('overallProgress').textContent = overallProgress + '%';
+            document.getElementById('executiveProgress').textContent = executiveProgress + '%';
+            document.getElementById('employeeProgress').textContent = employeeProgress + '%';
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // 임원 평가 현황 업데이트
+        function updateExecutiveStatus() {
+            const executiveStatus = document.getElementById('executiveStatus');
+            executiveStatus.innerHTML = '';
+
+            executives.forEach(executive => {
+                const evaluationsByExec = Object.values(evaluations).filter(e => 
+                    (e.evaluatorType === 'chairman' && executive === '이사장') ||
+                    (e.evaluatorType === 'executive' && e.executivePosition === executive)
+                );
+
+                let expectedCount = 8;
+                
+                if (executive !== '이사장' && divisionMapping[executive]) {
+                    const excludedTeams = divisionMapping[executive].filter(dept => presentingDepts.includes(dept));
+                    expectedCount = 8 - excludedTeams.length;
+                }
+
+                const completedCount = evaluationsByExec.length;
+
+                let statusClass = 'missing';
+                let badgeClass = 'badge-missing';
+                let statusText = '미완료';
+
+                if (completedCount === expectedCount && expectedCount > 0) {
+                    statusClass = 'completed';
+                    badgeClass = 'badge-completed';
+                    statusText = '완료';
+                } else if (completedCount > 0) {
+                    statusClass = 'partial';
+                    badgeClass = 'badge-partial';
+                    statusText = `${completedCount}/${expectedCount}`;
+                } else if (expectedCount === 0) {
+                    statusClass = 'not-applicable';
+                    badgeClass = 'badge-na';
+                    statusText = '해당없음';
+                }
+
+                const statusItem = document.createElement('div');
+                statusItem.className = `status-item ${statusClass}`;
+                statusItem.innerHTML = `
+                    <span><strong>${executive}</strong></span>
+                    <span class="status-badge ${badgeClass}">${statusText}</span>
+                `;
+                executiveStatus.appendChild(statusItem);
+            });
+        }
+
+        // 부서별 직원 평가 현황 업데이트
+        function updateDepartmentStatus() {
+            const departmentStatus = document.getElementById('departmentStatus');
+            departmentStatus.innerHTML = '';
+
+            allDepartments.forEach(dept => {
+                const employeeEvals = Object.values(evaluations).filter(e => 
+                    e.evaluatorType === 'employee' && e.evaluatorDept === dept
+                );
+
+                const availableTeams = presentingDepts.filter(team => team !== dept);
+                const expectedCount = availableTeams.length;
+                const completedCount = employeeEvals.length;
+
+                let statusClass = 'missing';
+                let badgeClass = 'badge-missing';
+                let statusText = '미완료';
+
+                if (expectedCount === 0) {
+                    statusClass = 'not-applicable';
+                    badgeClass = 'badge-na';
+                    statusText = '해당없음';
+                } else if (completedCount >= expectedCount * 0.8) {
+                    statusClass = 'completed';
+                    badgeClass = 'badge-completed';
+                    statusText = `활발 (${completedCount}명)`;
+                } else if (completedCount > 0) {
+                    statusClass = 'partial';
+                    badgeClass = 'badge-partial';
+                    statusText = `일부 (${completedCount}명)`;
+                }
+
+                const statusItem = document.createElement('div');
+                statusItem.className = `status-item ${statusClass}`;
+                statusItem.innerHTML = `
+                    <span><strong>${dept}</strong></span>
+                    <span class="status-badge ${badgeClass}">${statusText}</span>
+                `;
+                departmentStatus.appendChild(statusItem);
+            });
+        }
+
+        // 발표팀별 평가 현황 업데이트
+        function updateTeamStatus() {
+            const teamStatusGrid = document.getElementById('teamStatusGrid');
+            teamStatusGrid.innerHTML = '';
+
+            presentingDepts.forEach(team => {
+                const teamEvals = Object.values(evaluations).filter(e => e.team === team);
+                const executiveEvals = teamEvals.filter(e => e.evaluatorType === 'chairman' || e.evaluatorType === 'executive');
+                const employeeEvals = teamEvals.filter(e => e.evaluatorType === 'employee');
+
+                const belongingDivision = getDivisionByDept(team);
+                const expectedExecutives = belongingDivision ? 6 : 7;
+                const expectedEmployees = 25;
+
+                const execProgress = expectedExecutives > 0 ? ((executiveEvals.length / expectedExecutives) * 100).toFixed(0) : 0;
+                const empProgress = expectedEmployees > 0 ? ((employeeEvals.length / expectedEmployees) * 100).toFixed(0) : 0;
+
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-status-card';
+                teamCard.innerHTML = `
+                    <h4 style="color: #4CAF50; margin-bottom: 15px;">${team}</h4>
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>👔 임원 평가</span>
+                            <span><strong>${executiveEvals.length}/${expectedExecutives}</strong></span>
+                        </div>
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 8px;">
+                            <div style="background: #4CAF50; width: ${execProgress}%; height: 100%; border-radius: 10px; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>👥 직원 평가</span>
+                            <span><strong>${employeeEvals.length}</strong>명</span>
+                        </div>
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 8px;">
+                            <div style="background: #2196F3; width: ${Math.min(empProgress, 100)}%; height: 100%; border-radius: 10px; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px; font-size: 0.9em; color: #666;">
+                        총 ${teamEvals.length}개 평가 완료
+                    </div>
+                `;
+                teamStatusGrid.appendChild(teamCard);
+            });
+        }
+
+        // 최근 활동 업데이트
+        function updateRecentActivity() {
+            const recentActivity = document.getElementById('recentActivity');
+            const sortedEvaluations = Object.values(evaluations)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 20);
+
+            recentActivity.innerHTML = '';
+
+            if (sortedEvaluations.length === 0) {
+                recentActivity.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">아직 평가가 없습니다.</div>';
+                return;
+            }
+
+            sortedEvaluations.forEach((eval, index) => {
+                const time = new Date(eval.timestamp).toLocaleTimeString();
+                const evaluatorInfo = eval.evaluatorType === 'employee' ? 
+                    `${eval.evaluatorDept} ${eval.evaluatorName}` : 
+                    `${eval.evaluatorType === 'chairman' ? '이사장' : eval.executivePosition} ${eval.evaluatorName}`;
+
+                const activityItem = document.createElement('div');
+                activityItem.className = `activity-item ${index < 3 ? 'blinking' : ''}`;
+                activityItem.innerHTML = `
+                    <div>
+                        <strong>${evaluatorInfo}</strong>이(가) <span style="color: #4CAF50;">${eval.team}</span> 평가 완료
+                        <div style="font-size: 0.9em; color: #666;">점수: ${eval.totalScore}점</div>
+                    </div>
+                    <div class="activity-time">${time}</div>
+                `;
+                recentActivity.appendChild(activityItem);
+            });
+        }
+
+        // 미완료자 명단 출력
+        function exportMissingList() {
+            let missingList = "2025년도 상반기 서시공 어워드 평가 미완료자 명단\n";
+            missingList += "생성일시: " + new Date().toLocaleString() + "\n\n";
+
+            missingList += "=== 임원 미완료 현황 ===\n";
+            executives.forEach(executive => {
+                const evaluationsByExec = Object.values(evaluations).filter(e => 
+                    (e.evaluatorType === 'chairman' && executive === '이사장') ||
+                    (e.evaluatorType === 'executive' && e.executivePosition === executive)
+                );
+
+                let expectedCount = 8;
+                if (executive !== '이사장' && divisionMapping[executive]) {
+                    const excludedTeams = divisionMapping[executive].filter(dept => presentingDepts.includes(dept));
+                    expectedCount = 8 - excludedTeams.length;
+                }
+
+                if (evaluationsByExec.length < expectedCount) {
+                    missingList += `${executive}: ${evaluationsByExec.length}/${expectedCount} 완료\n`;
+                }
+            });
+
+            missingList += "\n=== 부서별 직원 참여 현황 ===\n";
+            allDepartments.forEach(dept => {
+                const employeeEvals = Object.values(evaluations).filter(e => 
+                    e.evaluatorType === 'employee' && e.evaluatorDept === dept
+                );
+                const availableTeams = presentingDepts.filter(team => team !== dept);
+                
+                if (availableTeams.length > 0) {
+                    missingList += `${dept}: ${employeeEvals.length}명 참여\n`;
+                }
+            });
+
+            const blob = new Blob([missingList], { type: 'text/plain;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '2025_서시공어워드_평가_미완료자_명단_' + new Date().toISOString().slice(0,16).replace('T', '_') + '.txt';
+            link.click();
+        }
+        function updateManagement() {
+            const statusDiv = document.getElementById('evaluationStatus');
+            statusDiv.innerHTML = '';
+
+            const evaluationsByDept = {};
+            presentingDepts.forEach(dept => {
+                evaluationsByDept[dept] = {
+                    executive: 0,
+                    employee: 0
+                };
+            });
+
+            Object.values(evaluations).forEach(evaluation => {
+                if (evaluation.evaluatorType === 'chairman' || evaluation.evaluatorType === 'executive') {
+                    evaluationsByDept[evaluation.team].executive++;
+                } else {
+                    evaluationsByDept[evaluation.team].employee++;
+                }
+            });
+
+            presentingDepts.forEach(dept => {
+                const deptData = evaluationsByDept[dept];
+                const statusCard = document.createElement('div');
+                statusCard.className = 'stat-card';
+                statusCard.style.margin = '10px';
+                
+                const belongingDivision = getDivisionByDept(dept);
+                const excludedExecutives = belongingDivision ? 1 : 0;
+                const expectedExecutives = 7 - excludedExecutives;
+                
+                statusCard.innerHTML = `
+                    <h4 style="margin-bottom: 10px; color: #4CAF50;">${dept}</h4>
+                    <p>임원 평가: ${deptData.executive}/${expectedExecutives}명</p>
+                    <p>직원 평가: ${deptData.employee}명</p>
+                    ${belongingDivision ? `<p style="font-size: 0.9em; color: #666;">※ ${belongingDivision} 제외</p>` : ''}
+                `;
+                statusDiv.appendChild(statusCard);
+            });
+        }
+
+        function exportResults() {
+            const deptScores = {};
+            
+            presentingDepts.forEach(dept => {
+                deptScores[dept] = {
+                    executiveScores: [],
+                    employeeScores: [],
+                    executiveAvg: 0,
+                    employeeAvg: 0,
+                    finalScore: 0
+                };
+            });
+
+            Object.values(evaluations).forEach(evaluation => {
+                const dept = evaluation.team;
+                if (evaluation.evaluatorType === 'chairman' || evaluation.evaluatorType === 'executive') {
+                    deptScores[dept].executiveScores.push(evaluation.totalScore);
+                } else {
+                    deptScores[dept].employeeScores.push(evaluation.totalScore);
+                }
+            });
+
+            presentingDepts.forEach(dept => {
+                const deptData = deptScores[dept];
+                
+                if (deptData.executiveScores.length > 0) {
+                    deptData.executiveAvg = deptData.executiveScores.reduce((a, b) => a + b, 0) / deptData.executiveScores.length;
+                }
+                
+                if (deptData.employeeScores.length > 0) {
+                    deptData.employeeAvg = deptData.employeeScores.reduce((a, b) => a + b, 0) / deptData.employeeScores.length;
+                }
+                
+                deptData.finalScore = (deptData.executiveAvg * 0.6) + (deptData.employeeAvg * 0.4);
+            });
+
+            const sortedDepts = presentingDepts.sort((a, b) => deptScores[b].finalScore - deptScores[a].finalScore);
+
+            let csvContent = "순위,부서명,최종점수,임원평균,직원평균,임원평가수,직원평가수\n";
+            sortedDepts.forEach((dept, index) => {
+                const deptData = deptScores[dept];
+                csvContent += `${index + 1},${dept},${deptData.finalScore.toFixed(1)},${deptData.executiveAvg.toFixed(1)},${deptData.employeeAvg.toFixed(1)},${deptData.executiveScores.length},${deptData.employeeScores.length}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '2025_서시공어워드_평가결과.csv';
+            link.click();
+        }
         function printResults() { window.print(); }
         function resetAllData() {
             if (confirm('⚠️ 모든 평가 데이터를 초기화하시겠습니까?')) {
@@ -1312,12 +1697,16 @@
             initializePageMode();
             updateQRCode();
             updateResults();
+            updateManagement();
+            updateMonitor();
         });
 
         // 자동 새로고침
         setInterval(function() {
             if (document.getElementById('results').classList.contains('active')) {
                 updateResults();
+            } else if (document.getElementById('monitor').classList.contains('active')) {
+                updateMonitor();
             }
         }, 5000);
     </script>
