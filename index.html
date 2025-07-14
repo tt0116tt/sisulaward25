@@ -817,8 +817,29 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isAdminMode = urlParams.get('admin') === 'true';
 
-        // 데이터 저장소
+        // 데이터 저장소 - localStorage 사용
         let evaluations = {};
+
+        // 데이터 로드 및 저장 함수
+        function loadEvaluations() {
+            try {
+                const stored = localStorage.getItem('ssg_evaluations_2025');
+                if (stored) {
+                    evaluations = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.log('데이터 로드 실패:', e);
+                evaluations = {};
+            }
+        }
+
+        function saveEvaluations() {
+            try {
+                localStorage.setItem('ssg_evaluations_2025', JSON.stringify(evaluations));
+            } catch (e) {
+                console.log('데이터 저장 실패:', e);
+            }
+        }
         let presentingDepts = ['IT전략실', '장애인콜택시운영처', '서울어린이대공원', '청계천관리처', '자산관리혁신처', '공사감독1처', '주차시설운영처', '공공자전거운영처'];
         
         // 현재 평가 세션 데이터
@@ -891,7 +912,17 @@
                     if (selectedPosition) {
                         evaluatorNameInput.value = selectedPosition;
                     }
-                });
+                // 자동 새로고침 (더 자주 업데이트)
+        setInterval(function() {
+            if (isAdminMode) {
+                loadEvaluations(); // 데이터 다시 로드
+                if (document.getElementById('results').classList.contains('active')) {
+                    updateResults();
+                } else if (document.getElementById('monitor').classList.contains('active')) {
+                    updateMonitor();
+                }
+            }
+        }, 3000); // 3초마다 새로고침
             }
         }
 
@@ -1158,6 +1189,9 @@
                     timestamp: new Date().toISOString()
                 };
             });
+
+            // 데이터 저장
+            saveEvaluations();
 
             alert(`🎉 모든 평가가 성공적으로 제출되었습니다!\n\n총 ${availableTeams.length}개 과제 평가 완료\n감사합니다!`);
             
@@ -1687,13 +1721,17 @@
         function resetAllData() {
             if (confirm('⚠️ 모든 평가 데이터를 초기화하시겠습니까?')) {
                 evaluations = {};
+                saveEvaluations(); // localStorage도 초기화
                 updateResults();
+                updateManagement();
+                updateMonitor();
                 alert('✅ 모든 데이터가 초기화되었습니다.');
             }
         }
 
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            loadEvaluations(); // 저장된 데이터 로드
             initializePageMode();
             updateQRCode();
             updateResults();
@@ -1701,14 +1739,25 @@
             updateMonitor();
         });
 
-        // 자동 새로고침
-        setInterval(function() {
-            if (document.getElementById('results').classList.contains('active')) {
+        // 페이지 가시성 변화 감지 (탭 전환 시 새로고침)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && isAdminMode) {
+                loadEvaluations();
                 updateResults();
-            } else if (document.getElementById('monitor').classList.contains('active')) {
                 updateMonitor();
+                updateManagement();
             }
-        }, 5000);
+        });
+
+        // Storage 이벤트 리스너 (다른 탭에서 데이터 변경 시)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'ssg_evaluations_2025' && isAdminMode) {
+                loadEvaluations();
+                updateResults();
+                updateMonitor();
+                updateManagement();
+            }
+        });
     </script>
 </body>
 </html>
