@@ -1307,19 +1307,133 @@
             }
         }
 
+        // 샘플 데이터 생성 함수
+        function generateSampleData() {
+            const sampleEvaluators = [
+                // 이사장
+                { type: 'chairman', name: '이사장', dept: '', position: '' },
+                
+                // 본부장들
+                { type: 'executive', name: '경영전략본부장', dept: '', position: '경영전략본부장' },
+                { type: 'executive', name: '복지경제본부장', dept: '', position: '복지경제본부장' },
+                { type: 'executive', name: '문화체육본부장', dept: '', position: '문화체육본부장' },
+                { type: 'executive', name: '도로관리본부장', dept: '', position: '도로관리본부장' },
+                { type: 'executive', name: '시설안전본부장', dept: '', position: '시설안전본부장' },
+                { type: 'executive', name: '교통사업본부장', dept: '', position: '교통사업본부장' },
+                
+                // 직원들
+                { type: 'employee', name: '김철수', dept: '기획조정실', position: '' },
+                { type: 'employee', name: '이영희', dept: '인사노무처', position: '' },
+                { type: 'employee', name: '박민수', dept: '총무처', position: '' },
+                { type: 'employee', name: '정수진', dept: '홍보실', position: '' },
+                { type: 'employee', name: '최대호', dept: '안전처', position: '' },
+                { type: 'employee', name: '강미영', dept: '상가운영처', position: '' },
+                { type: 'employee', name: '윤정호', dept: '서울월드컵경기장운영처', position: '' },
+                { type: 'employee', name: '임소라', dept: '돔경기장운영처', position: '' },
+                { type: 'employee', name: '한동훈', dept: '남산곤돌라인수단TF', position: '' },
+                { type: 'employee', name: '조은별', dept: '도로관리처', position: '' },
+                { type: 'employee', name: '노승환', dept: '도로시설처', position: '' },
+                { type: 'employee', name: '서현정', dept: '도로기전처', position: '' },
+                { type: 'employee', name: '배지훈', dept: '도로환경처', position: '' },
+                { type: 'employee', name: '유민아', dept: '교통정보처', position: '' },
+                { type: 'employee', name: '김상욱', dept: '공사감독2처', position: '' },
+                { type: 'employee', name: '이가영', dept: '공사감독3처', position: '' },
+                { type: 'employee', name: '박현우', dept: '공동구관리처', position: '' },
+                { type: 'employee', name: '정민호', dept: '상수도지원처', position: '' },
+                { type: 'employee', name: '최연수', dept: '교통시설운영처', position: '' }
+            ];
+
+            // 기존 데이터 초기화
+            evaluations = {};
+
+            // 각 평가자가 평가 가능한 팀들에 대해 평가 데이터 생성
+            sampleEvaluators.forEach(evaluator => {
+                let evaluableTeams = presentingDepts.filter(dept => {
+                    if (evaluator.type === 'chairman') {
+                        return true;
+                    } else if (evaluator.type === 'executive') {
+                        const deptDivision = getDivisionByDept(dept);
+                        return evaluator.position !== deptDivision;
+                    } else if (evaluator.type === 'employee') {
+                        return evaluator.dept !== dept;
+                    }
+                    return false;
+                });
+
+                evaluableTeams.forEach(team => {
+                    // 평가 점수 랜덤 생성 (실제 범위 내에서)
+                    const creativity = Math.floor(Math.random() * 13) + 18; // 18-30
+                    const difficulty = Math.floor(Math.random() * 13) + 18; // 18-30
+                    const effectiveness = Math.floor(Math.random() * 9) + 12; // 12-20
+                    const propagation = Math.floor(Math.random() * 5) + 6; // 6-10
+                    const contribution = Math.floor(Math.random() * 5) + 6; // 6-10
+                    const totalScore = creativity + difficulty + effectiveness + propagation + contribution;
+
+                    const evaluationId = `${evaluator.type}_${evaluator.name}_${team}_${Date.now()}_${Math.random()}`;
+                    
+                    evaluations[evaluationId] = {
+                        evaluatorType: evaluator.type,
+                        evaluatorName: evaluator.name,
+                        evaluatorDept: evaluator.dept,
+                        executivePosition: evaluator.position,
+                        team: team,
+                        scores: {
+                            creativity: creativity,
+                            difficulty: difficulty,
+                            effectiveness: effectiveness,
+                            propagation: propagation,
+                            contribution: contribution
+                        },
+                        totalScore: totalScore,
+                        timestamp: new Date().toISOString()
+                    };
+                });
+            });
+
+            console.log('샘플 데이터 생성 완료:', Object.keys(evaluations).length, '개 평가');
+            
+            // 결과 업데이트
+            if (document.getElementById('results').classList.contains('active')) {
+                updateResults();
+            }
+            
+            alert(`🎉 샘플 데이터가 생성되었습니다!\n\n총 ${Object.keys(evaluations).length}개의 평가 데이터가 생성되었습니다.`);
+        }
+
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             initializePageMode();
             updateQRCode();
             updateResults();
+            
+            // 관리자 모드일 때 샘플 데이터 생성 버튼 추가
+            if (isAdminMode) {
+                const welcomeTab = document.getElementById('welcome');
+                const sampleDataButton = document.createElement('div');
+                sampleDataButton.innerHTML = `
+                    <div style="text-align: center; margin-top: 30px; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px;">
+                        <h4 style="color: #856404; margin-bottom: 15px;">🔧 관리자 전용 기능</h4>
+                        <button class="btn btn-primary" onclick="generateSampleData()" style="margin: 5px;">
+                            📊 샘플 데이터 생성
+                        </button>
+                        <button class="btn btn-danger" onclick="resetAllData()" style="margin: 5px;">
+                            🗑️ 전체 데이터 삭제
+                        </button>
+                        <p style="font-size: 0.9em; color: #856404; margin-top: 10px;">
+                            샘플 데이터를 생성하여 평가 시스템을 테스트할 수 있습니다.
+                        </p>
+                    </div>
+                `;
+                welcomeTab.appendChild(sampleDataButton);
+            }
         });
 
-        // 자동 새로고침
+        // 자동 새로고침 (더 자주 업데이트)
         setInterval(function() {
             if (document.getElementById('results').classList.contains('active')) {
                 updateResults();
             }
-        }, 5000);
+        }, 2000);
     </script>
 </body>
 </html>
