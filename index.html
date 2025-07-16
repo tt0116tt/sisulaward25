@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2025년도 상반기 서시공 어워드 우수과제 평가</title>
+
     <!-- Firebase SDK 추가 -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
         * {
@@ -341,6 +342,45 @@
             font-size: 1.1em;
             opacity: 0.9;
         }
+        
+        /* 커스텀 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .modal-content p {
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
     </style>
 </head>
 <body>
@@ -436,27 +476,27 @@
                     <div class="evaluation-form">
                         <div class="evaluation-item">
                             <label>창의성 (18~30점)</label>
-                            <input type="number" id="creativity" min="18" max="30" placeholder="18~30">
+                            <input type="number" id="creativity" min="18" max="30" placeholder="18~30" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onpaste="return false;" ondrop="return false;">
                         </div>
                         
                         <div class="evaluation-item">
                             <label>난이도 (18~30점)</label>
-                            <input type="number" id="difficulty" min="18" max="30" placeholder="18~30">
+                            <input type="number" id="difficulty" min="18" max="30" placeholder="18~30" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onpaste="return false;" ondrop="return false;">
                         </div>
                         
                         <div class="evaluation-item">
                             <label>효과성 (12~20점)</label>
-                            <input type="number" id="effectiveness" min="12" max="20" placeholder="12~20">
+                            <input type="number" id="effectiveness" min="12" max="20" placeholder="12~20" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onpaste="return false;" ondrop="return false;">
                         </div>
                         
                         <div class="evaluation-item">
                             <label>전파성 (6~10점)</label>
-                            <input type="number" id="spreadability" min="6" max="10" placeholder="6~10">
+                            <input type="number" id="spreadability" min="6" max="10" placeholder="6~10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onpaste="return false;" ondrop="return false;">
                         </div>
                         
                         <div class="evaluation-item">
                             <label>기여도 (6~10점)</label>
-                            <input type="number" id="contribution" min="6" max="10" placeholder="6~10">
+                            <input type="number" id="contribution" min="6" max="10" placeholder="6~10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onpaste="return false;" ondrop="return false;">
                         </div>
                         
                         <div class="evaluation-item">
@@ -512,7 +552,23 @@
                 <div class="form-group">
                     <button class="btn btn-primary" onclick="refreshStatus()">상태 새로고침</button>
                     <button class="btn btn-success" onclick="exportResults()">결과 내보내기</button>
+                    <button class="btn btn-danger" onclick="showDeleteEvaluator()">데이터 삭제</button>
                     <button class="btn btn-danger" onclick="resetAllData()">전체 초기화</button>
+                </div>
+                
+                <!-- 개별 삭제 영역 -->
+                <div id="deleteSection" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                    <h4 style="margin-bottom: 15px;">개별 평가자 삭제</h4>
+                    <div class="form-group">
+                        <label for="deleteEvaluatorSelect">삭제할 평가자 선택</label>
+                        <select id="deleteEvaluatorSelect" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                            <option value="">선택하세요</option>
+                        </select>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="hideDeleteEvaluator()">취소</button>
+                        <button class="btn btn-danger" onclick="deleteSelectedEvaluator()">삭제</button>
+                    </div>
                 </div>
                 
                 <h3>임원 평가 현황</h3>
@@ -527,11 +583,18 @@
                 <h2>평가 결과</h2>
                 
                 <div class="form-group">
-                    <button class="btn btn-primary" onclick="calculateResults()">결과 계산</button>
                     <button class="btn btn-success" onclick="showFinalRanking()">최종 순위</button>
+                    <button class="btn btn-primary" onclick="calculateResults()">결과 계산</button>
                 </div>
                 
-                <div id="resultsArea" class="results-grid">                </div>
+                <div id="resultsArea" class="results-grid">
+                    <div style="display: flex; align-items: center; justify-content: center; min-height: 40vh; text-align: center;">
+                        <div>
+                            <h3 style="color: #666; margin-bottom: 20px;">📊 평가 결과를 확인하시려면</h3>
+                            <p style="font-size: 1.2em; color: #999;">위의 '결과 계산' 버튼을 클릭해주세요.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- 평가 완료 화면 -->
@@ -539,6 +602,18 @@
                 <div style="display: flex; align-items: center; justify-content: center; min-height: 70vh;">
                     <h1 style="font-size: 3em; color: #28a745; text-align: center;">평가에 참여해주셔서 감사합니다^^</h1>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 모달 -->
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">알림</h3>
+            <p id="modalMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="modalConfirm">확인</button>
+                <button class="btn btn-danger" id="modalCancel" style="display: none;">취소</button>
             </div>
         </div>
     </div>
@@ -562,7 +637,9 @@
             const data = snapshot.val();
             if (data) {
                 allEvaluations = data;
-                refreshStatus();
+                if (isAdminMode) {
+                    refreshStatus();
+                }
             }
         });
 
@@ -603,6 +680,83 @@
         let allEvaluations = [];
         let completedEvaluators = []; // 평가 완료한 평가자 목록
         let isAdminMode = false; // 관리자 모드 여부
+        let isAdminAuthenticated = false; // 관리자 인증 상태
+        const ADMIN_PASSWORD = 'sisul2025'; // 관리자 비밀번호
+        
+        // 커스텀 알림 및 확인 함수
+        function showAlert(message) {
+            return new Promise((resolve) => {
+                document.getElementById('modalTitle').textContent = '알림';
+                document.getElementById('modalMessage').textContent = message;
+                document.getElementById('modalConfirm').textContent = '확인';
+                document.getElementById('modalCancel').style.display = 'none';
+                document.getElementById('customModal').style.display = 'block';
+                
+                document.getElementById('modalConfirm').onclick = () => {
+                    document.getElementById('customModal').style.display = 'none';
+                    resolve(true);
+                };
+            });
+        }
+        
+        function showConfirm(message) {
+            return new Promise((resolve) => {
+                document.getElementById('modalTitle').textContent = '확인';
+                document.getElementById('modalMessage').textContent = message;
+                document.getElementById('modalConfirm').textContent = '확인';
+                document.getElementById('modalCancel').style.display = 'inline-block';
+                document.getElementById('customModal').style.display = 'block';
+                
+                document.getElementById('modalConfirm').onclick = () => {
+                    document.getElementById('customModal').style.display = 'none';
+                    resolve(true);
+                };
+                
+                document.getElementById('modalCancel').onclick = () => {
+                    document.getElementById('customModal').style.display = 'none';
+                    resolve(false);
+                };
+            });
+        }
+        
+        // 관리자 비밀번호 입력 함수
+        function showPasswordPrompt() {
+            return new Promise((resolve) => {
+                document.getElementById('modalTitle').textContent = '관리자 인증';
+                document.getElementById('modalMessage').innerHTML = `
+                    <p style="margin-bottom: 15px;">관리자 비밀번호를 입력하세요:</p>
+                    <input type="password" id="adminPasswordInput" 
+                           style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1em;"
+                           placeholder="비밀번호 입력">
+                `;
+                document.getElementById('modalConfirm').textContent = '확인';
+                document.getElementById('modalCancel').style.display = 'inline-block';
+                document.getElementById('customModal').style.display = 'block';
+                
+                // 입력 필드에 포커스
+                setTimeout(() => {
+                    document.getElementById('adminPasswordInput').focus();
+                }, 100);
+                
+                // Enter 키 처리
+                document.getElementById('adminPasswordInput').onkeypress = (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('modalConfirm').click();
+                    }
+                };
+                
+                document.getElementById('modalConfirm').onclick = () => {
+                    const password = document.getElementById('adminPasswordInput').value;
+                    document.getElementById('customModal').style.display = 'none';
+                    resolve(password);
+                };
+                
+                document.getElementById('modalCancel').onclick = () => {
+                    document.getElementById('customModal').style.display = 'none';
+                    resolve(null);
+                };
+            });
+        }
         
         // 페이지 로드 시 관리자 모드 확인
         function checkAdminMode() {
@@ -618,6 +772,11 @@
                 // 페이지 제목에 관리자 표시 추가
                 const header = document.querySelector('.header h1');
                 header.textContent += ' - 관리자 모드';
+            } else {
+                // 평가자 모드에서는 관리자 탭 완전히 숨김
+                document.querySelectorAll('.admin-only').forEach(element => {
+                    element.style.display = 'none';
+                });
             }
         }
         
@@ -655,7 +814,10 @@
                 }
             });
             
-            refreshStatus();
+            // 관리자 모드일 때만 상태 새로고침
+            if (isAdminMode) {
+                refreshStatus();
+            }
         });
         
         function updateDepartmentOptions() {
@@ -689,15 +851,26 @@
         }
         
         function showSection(sectionName) {
-            // 관리자 모드가 아닌 경우에만 관리자 전용 섹션 접근 차단
+            // 평가자 모드에서 관리자 탭 접근 시도 시 차단
             if (!isAdminMode && (sectionName === 'admin' || sectionName === 'results')) {
-                alert('관리자만 접근할 수 있습니다.');
+                showAlert('접근 권한이 없습니다.');
+                return;
+            }
+            
+            // 관리자 탭 접근 시 비밀번호 확인 (관리자 모드에서만)
+            if (isAdminMode && (sectionName === 'admin' || sectionName === 'results') && !isAdminAuthenticated) {
+                authenticateAdmin(sectionName);
                 return;
             }
             
             // 평가 참여 탭을 클릭했을 때 폼 초기화
             if (sectionName === 'evaluator') {
                 resetEvaluatorForm();
+            }
+            
+            // 결과 확인 탭을 클릭했을 때 기본 화면으로 초기화
+            if (sectionName === 'results') {
+                resetResultsArea();
             }
             
             document.querySelectorAll('.section').forEach(section => {
@@ -715,6 +888,73 @@
             }
         }
         
+        // 결과 확인 탭 기본 화면으로 초기화
+        function resetResultsArea() {
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; min-height: 40vh; text-align: center;">
+                    <div>
+                        <h3 style="color: #666; margin-bottom: 20px;">📊 평가 결과를 확인하시려면</h3>
+                        <p style="font-size: 1.2em; color: #999;">위의 '최종 순위' 또는 '결과 계산' 버튼을 클릭해주세요.</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 관리자 인증 함수
+        async function authenticateAdmin(targetSection) {
+            const password = await showPasswordPrompt();
+            
+            if (password === null) {
+                // 취소된 경우 평가 참여 탭으로 돌아가기
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                document.getElementById('evaluator').classList.add('active');
+                document.querySelector('[onclick="showSection(\'evaluator\')"]').classList.add('active');
+                return;
+            }
+            
+            if (password === ADMIN_PASSWORD) {
+                isAdminAuthenticated = true;
+                showAlert('관리자 인증이 완료되었습니다.');
+                
+                // 인증 성공 후 해당 섹션으로 이동
+                setTimeout(() => {
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.querySelectorAll('.nav-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    
+                    document.getElementById(targetSection).classList.add('active');
+                    document.querySelector(`[onclick="showSection('${targetSection}')"]`).classList.add('active');
+                    
+                    if (targetSection === 'admin') {
+                        refreshStatus();
+                    }
+                }, 1000);
+            } else {
+                showAlert('비밀번호가 올바르지 않습니다.');
+                
+                // 인증 실패 시 평가 참여 탭으로 돌아가기
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                document.getElementById('evaluator').classList.add('active');
+                document.querySelector('[onclick="showSection(\'evaluator\')"]').classList.add('active');
+            }
+        }
+        
         function startEvaluation() {
             const type = document.getElementById('evaluatorType').value;
             let name, dept;
@@ -722,7 +962,7 @@
             if (type === 'executive') {
                 const position = document.getElementById('evaluatorPosition').value;
                 if (!position) {
-                    alert('직위를 선택해주세요.');
+                    showAlert('직위를 선택해주세요.');
                     return;
                 }
                 name = position;
@@ -731,18 +971,18 @@
                 name = document.getElementById('evaluatorName').value;
                 dept = document.getElementById('evaluatorDept').value;
                 if (!name || !dept) {
-                    alert('성명과 소속을 모두 입력해주세요.');
+                    showAlert('성명과 소속을 모두 입력해주세요.');
                     return;
                 }
             } else {
-                alert('평가자 구분을 선택해주세요.');
+                showAlert('평가자 구분을 선택해주세요.');
                 return;
             }
             
             // 중복 평가 체크
             const evaluatorKey = type === 'executive' ? dept : `${name}_${dept}`;
             if (completedEvaluators.includes(evaluatorKey)) {
-                alert('이미 평가를 완료하셨습니다.\n중복 평가는 불가능합니다.');
+                showAlert('이미 평가를 완료하셨습니다.\n중복 평가는 불가능합니다.');
                 return;
             }
             
@@ -864,7 +1104,7 @@
             // 빈 값 검증
             if (!creativity.value || !difficulty.value || !effectiveness.value || 
                 !spreadability.value || !contribution.value) {
-                alert('모든 항목에 점수를 입력해주세요.');
+                showAlert('모든 항목에 점수를 입력해주세요.');
                 return false;
             }
             
@@ -874,19 +1114,17 @@
                          parseInt(contribution.value);
             
             if (total > 100) {
-                alert('총점이 100점을 초과할 수 없습니다. 현재 총점: ' + total + '점');
+                showAlert('총점이 100점을 초과할 수 없습니다. 현재 총점: ' + total + '점');
                 return false;
             }
             
             if (!isValid) {
-                alert('점수 범위를 확인해주세요.\n창의성: 18~30점\n난이도: 18~30점\n효과성: 12~20점\n전파성: 6~10점\n기여도: 6~10점');
+                showAlert('점수 범위를 확인해주세요.\n창의성: 18~30점\n난이도: 18~30점\n효과성: 12~20점\n전파성: 6~10점\n기여도: 6~10점');
                 return false;
             }
             
             return true;
         }
-        
-
         
         function previousEvaluation() {
             if (currentPage > 0) {
@@ -990,9 +1228,11 @@
                 currentEvaluator.dept : 
                 `${currentEvaluator.name}_${currentEvaluator.dept}`;
             completedEvaluators.push(evaluatorKey);
+
             // Firebase에 저장
-            database.ref('allEvaluations').set(allEvaluations);
-            database.ref('completedEvaluators').set(completedEvaluators);
+database.ref('allEvaluations').set(allEvaluations);
+database.ref('completedEvaluators').set(completedEvaluators);
+
             
             // 모든 섹션 숨기기
             document.querySelectorAll('.section').forEach(section => {
@@ -1046,7 +1286,7 @@
             }
             allEvaluations.push(evaluationData);
             
-            alert('평가가 완료되었습니다!');
+            showAlert('평가가 완료되었습니다!');
             
             document.getElementById('evaluationArea').classList.add('hidden');
             document.getElementById('evaluatorLogin').classList.remove('hidden');
@@ -1138,11 +1378,28 @@
             const container = document.getElementById('resultsArea');
             container.innerHTML = '';
             
-            Object.values(results).forEach(result => {
+            // 점수 기준으로 내림차순 정렬
+            const sortedResults = Object.values(results).sort((a, b) => b.finalScore - a.finalScore);
+            
+            sortedResults.forEach((result, index) => {
                 const card = document.createElement('div');
                 card.className = 'result-card';
+                
+                // 상위 3위에게 특별한 배경색 적용
+                if (index === 0) {
+                    card.style.background = '#FFD700'; // 1위 - 금색
+                } else if (index === 1) {
+                    card.style.background = '#C0C0C0'; // 2위 - 은색
+                } else if (index === 2) {
+                    card.style.background = '#CD7F32'; // 3위 - 동색
+                }
+                
                 card.innerHTML = `
-                    <h3>${result.department}</h3>
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <h2 style="font-size: 2em; margin-bottom: 10px; ${index < 3 ? 'color: #333;' : 'color: #007bff;'}">
+                            ${index + 1}위: ${result.department}
+                        </h2>
+                    </div>
                     <div class="score-detail">
                         <span>임원 평균</span>
                         <span>${result.executiveAvg.toFixed(1)}점</span>
@@ -1168,6 +1425,31 @@
         }
         
         function showFinalRanking() {
+            // 먼저 티저 화면 표시
+            const container = document.getElementById('resultsArea');
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; cursor: pointer;" onclick="startRankingReveal()">
+                    <div>
+                        <h2 style="font-size: 2.5em; color: #007bff; margin-bottom: 30px; line-height: 1.4;">
+                            과연 2025년도 상반기<br>서시공 어워드 1위를 차지할<br>영광의 주인공은<br>어떤 부서일까요?
+                        </h2>
+                        <div style="margin-top: 40px;">
+                            <div style="display: inline-block; width: 50px; height: 50px; border: 3px solid #007bff; border-top: 3px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        </div>
+                        <p style="margin-top: 30px; font-size: 1.2em; color: #666;">화면을 클릭하여 순위 발표를 시작하세요!</p>
+                    </div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+        }
+        
+        function startRankingReveal() {
+            // 결과 계산
             const results = {};
             
             departments.forEach(dept => {
@@ -1206,28 +1488,140 @@
             
             const sortedResults = Object.values(results).sort((a, b) => b.finalScore - a.finalScore);
             
-            const container = document.getElementById('resultsArea');
-            container.innerHTML = '<h3>최종 순위</h3>';
+            let currentStep = 0;
             
-            sortedResults.forEach((result, index) => {
-                const rankCard = document.createElement('div');
-                rankCard.className = 'result-card';
-                rankCard.style.background = index < 3 ? ['#FFD700', '#C0C0C0', '#CD7F32'][index] : '#f8f9fa';
-                rankCard.innerHTML = `
-                    <h2 style="text-align: center; margin-bottom: 15px;">
-                        ${index + 1}위: ${result.department}
-                    </h2>
-                    <div class="final-score">
-                        ${result.finalScore.toFixed(1)}점
-                    </div>
-                `;
-                container.appendChild(rankCard);
-            });
+            function showStep() {
+                const container = document.getElementById('resultsArea');
+                
+                switch(currentStep) {
+                    case 0: // 5위~8위 표시
+                        container.innerHTML = `
+                            <div style="text-align: center; cursor: pointer;" onclick="nextStep()">
+                                <h3 style="margin-bottom: 30px; font-size: 2em;">🏆 최종 순위 발표 🏆</h3>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; margin: 0 auto;">
+                                    ${sortedResults.slice(4).map((result, index) => `
+                                        <div class="result-card" style="background: #f8f9fa;">
+                                            <h2 style="text-align: center; margin-bottom: 15px; color: #666;">
+                                                ${index + 5}위: ${result.department}
+                                            </h2>
+                                            <div class="final-score" style="color: #666;">
+                                                ${result.finalScore.toFixed(1)}점
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <p style="margin-top: 30px; font-size: 1.2em; color: #666;">화면을 클릭하여 계속...</p>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 1: // 4위 표시
+                        container.innerHTML = `
+                            <div style="text-align: center; cursor: pointer;" onclick="nextStep()">
+                                <h3 style="margin-bottom: 30px; font-size: 2em;">🥉 4위 발표 🥉</h3>
+                                <div style="max-width: 400px; margin: 0 auto;">
+                                    <div class="result-card" style="background: #e8e8e8; transform: scale(1.1);">
+                                        <h2 style="text-align: center; margin-bottom: 15px; font-size: 2em;">
+                                            4위: ${sortedResults[3].department}
+                                        </h2>
+                                        <div class="final-score" style="font-size: 2em;">
+                                            ${sortedResults[3].finalScore.toFixed(1)}점
+                                        </div>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 30px; font-size: 1.2em; color: #666;">화면을 클릭하여 계속...</p>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 2: // 3위 표시
+                        container.innerHTML = `
+                            <div style="text-align: center; cursor: pointer;" onclick="nextStep()">
+                                <h3 style="margin-bottom: 30px; font-size: 2em;">🥉 3위 발표 🥉</h3>
+                                <div style="max-width: 400px; margin: 0 auto;">
+                                    <div class="result-card" style="background: #CD7F32; color: white; transform: scale(1.1);">
+                                        <h2 style="text-align: center; margin-bottom: 15px; font-size: 2em; color: white;">
+                                            3위: ${sortedResults[2].department}
+                                        </h2>
+                                        <div class="final-score" style="font-size: 2em; background: rgba(255,255,255,0.2);">
+                                            ${sortedResults[2].finalScore.toFixed(1)}점
+                                        </div>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 30px; font-size: 1.2em; color: #666;">화면을 클릭하여 계속...</p>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 3: // 1위 vs 2위 대결 구도 (점수와 순위 숨김, 배경색 통일)
+                        container.innerHTML = `
+                            <div style="text-align: center; cursor: pointer;" onclick="nextStep()">
+                                <h2 style="font-size: 2.5em; color: #007bff; margin-bottom: 50px; line-height: 1.4;">
+                                    과연 최종 1위는<br>어떤 부서일까요?
+                                </h2>
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 50px; max-width: 800px; margin: 0 auto;">
+                                    <div style="flex: 1; text-align: center;">
+                                        <div style="background: #f8f9fa; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                            <h2 style="font-size: 2.5em; color: #333;">${sortedResults[1].department}</h2>
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 3em; color: #007bff; font-weight: bold;">VS</div>
+                                    <div style="flex: 1; text-align: center;">
+                                        <div style="background: #f8f9fa; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                            <h2 style="font-size: 2.5em; color: #333;">${sortedResults[0].department}</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 50px; font-size: 1.2em; color: #666;">화면을 클릭하여 1위 발표를 확인하세요!</p>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 4: // 1위 최종 발표
+                        container.innerHTML = `
+                            <div style="text-align: center;">
+                                <div style="margin-bottom: 30px;">
+                                    <h1 style="font-size: 4em; color: #FFD700; text-shadow: 3px 3px 6px rgba(0,0,0,0.3); margin-bottom: 20px;">
+                                        🏆 축하합니다! 🏆
+                                    </h1>
+                                    <h2 style="font-size: 3em; color: #007bff; margin-bottom: 30px;">
+                                        2025년도 상반기 서시공 어워드 1위
+                                    </h2>
+                                </div>
+                                <div style="max-width: 600px; margin: 0 auto;">
+                                    <div class="result-card" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #333; transform: scale(1.2); box-shadow: 0 20px 40px rgba(255, 215, 0, 0.4);">
+                                        <h1 style="text-align: center; margin-bottom: 20px; font-size: 3em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
+                                            🥇 ${sortedResults[0].department} 🥇
+                                        </h1>
+                                        <div style="font-size: 2.5em; font-weight: bold; background: rgba(255,255,255,0.3); border-radius: 10px; padding: 20px;">
+                                            최종 점수: ${sortedResults[0].finalScore.toFixed(1)}점
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 40px; font-size: 1.5em; color: #666;">
+                                    🎉 상반기 서시공 어워드 1위 수상을 축하드립니다! 🎉
+                                </div>
+                            </div>
+                        `;
+                        break;
+                }
+            }
+            
+            // 전역 함수로 nextStep 정의
+            window.nextStep = function() {
+                currentStep++;
+                if (currentStep <= 4) {
+                    showStep();
+                }
+            };
+            
+            // 첫 번째 단계 시작
+            showStep();
         }
         
         function exportResults() {
             if (allEvaluations.length === 0) {
-                alert('내보낼 데이터가 없습니다.');
+                showAlert('내보낼 데이터가 없습니다.');
                 return;
             }
             
@@ -1249,8 +1643,10 @@
             link.click();
             document.body.removeChild(link);
         }
-        function resetAllData() {
-    if (confirm('모든 평가 데이터를 삭제하시겠습니까?')) {
+        
+        async function resetAllData() {
+    const result = await showConfirm('모든 평가 데이터를 삭제하시겠습니까?');
+    if (result) {
         allEvaluations = [];
         completedEvaluators = [];
         
@@ -1258,11 +1654,81 @@
         database.ref('allEvaluations').remove();
         database.ref('completedEvaluators').remove();
         
-        alert('모든 데이터가 초기화되었습니다.');
+        showAlert('모든 데이터가 초기화되었습니다.');
         refreshStatus();
     }
 }
+        
+        function showDeleteEvaluator() {
+            const deleteSection = document.getElementById('deleteSection');
+            
+            // 현재 보이는 상태라면 숨기기
+            if (!deleteSection.classList.contains('hidden')) {
+                hideDeleteEvaluator();
+                return;
+            }
+            
+            const select = document.getElementById('deleteEvaluatorSelect');
+            select.innerHTML = '<option value="">선택하세요</option>';
+            
+            // 완료된 평가자 목록을 셀렉트 박스에 추가
+            if (allEvaluations && allEvaluations.length > 0) {
+                allEvaluations.forEach((evalData, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    const evaluatorType = evalData.evaluator.type === 'executive' ? '임원' : '직원';
+                    const evaluatorInfo = evalData.evaluator.type === 'executive' ? 
+                        evalData.evaluator.name : 
+                        `${evalData.evaluator.name} (${evalData.evaluator.dept})`;
+                    option.textContent = `${evaluatorType} - ${evaluatorInfo}`;
+                    select.appendChild(option);
+                });
+            }
+            
+            deleteSection.classList.remove('hidden');
+        }
+        
+        function hideDeleteEvaluator() {
+            document.getElementById('deleteSection').classList.add('hidden');
+        }
+        
+        async function deleteSelectedEvaluator() {
+            const selectedIndex = document.getElementById('deleteEvaluatorSelect').value;
+            
+            if (selectedIndex === '') {
+                showAlert('삭제할 평가자를 선택해주세요.');
+                return;
+            }
+            
+            const evalData = allEvaluations[selectedIndex];
+            const evaluatorType = evalData.evaluator.type === 'executive' ? '임원' : '직원';
+            const evaluatorInfo = evalData.evaluator.type === 'executive' ? 
+                evalData.evaluator.name : 
+                `${evalData.evaluator.name} (${evalData.evaluator.dept})`;
+            
+            const result = await showConfirm(`${evaluatorType} - ${evaluatorInfo}의 평가 데이터를 삭제하시겠습니까?`);
+            if (result) {
+                // allEvaluations에서 해당 데이터 삭제
+                allEvaluations.splice(selectedIndex, 1);
+                
+                // completedEvaluators에서도 해당 평가자 제거
+                const evaluatorKey = evalData.evaluator.type === 'executive' ? 
+                    evalData.evaluator.dept : 
+                    `${evalData.evaluator.name}_${evalData.evaluator.dept}`;
+                const keyIndex = completedEvaluators.indexOf(evaluatorKey);
+                if (keyIndex > -1) {
+                    completedEvaluators.splice(keyIndex, 1);
+                }
+                
+                // Firebase에도 업데이트 (새로 추가된 부분!)
+        database.ref('allEvaluations').set(allEvaluations);
+        database.ref('completedEvaluators').set(completedEvaluators);
+
+                showAlert('선택한 평가자의 데이터가 삭제되었습니다.');
+                hideDeleteEvaluator();
+                refreshStatus();
+            }
+        }
     </script>
 </body>
 </html>
-            
