@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2025년도 상반기 서시공 어워드 우수과제 평가</title>
-
-    <!-- Firebase SDK 추가 -->
+<!-- Firebase SDK 추가 -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
     <style>
         * {
             margin: 0;
@@ -619,7 +617,7 @@
     </div>
 
     <script>
-        // Firebase 설정 및 초기화
+       // Firebase 설정 및 초기화
         const firebaseConfig = {
             apiKey: "AIzaSyDdMIoq-H7UTLYRLvL1alv4sB7q6IyfdbE",
             authDomain: "sisul25.firebaseapp.com",
@@ -1228,11 +1226,9 @@
                 currentEvaluator.dept : 
                 `${currentEvaluator.name}_${currentEvaluator.dept}`;
             completedEvaluators.push(evaluatorKey);
-
-            // Firebase에 저장
+// Firebase에 저장
 database.ref('allEvaluations').set(allEvaluations);
 database.ref('completedEvaluators').set(completedEvaluators);
-
             
             // 모든 섹션 숨기기
             document.querySelectorAll('.section').forEach(section => {
